@@ -1,0 +1,21 @@
+{
+	"public": {
+		"webservices": {
+			"elasticsearch":{
+				"status": "active",
+				"url":"http://127.0.0.1:9200"
+			}
+		}
+	},
+	"records":{
+		"office_converter_path":"D:\\OfficeConverter\\OfficeConverter.exe",
+
+		"sync_interval":0,
+
+		"sync_limit_num":10,
+
+		"es_search_index": "steedos",
+
+		"cfs_file_server": "http://192.1.1.141:315"
+  }
+}
