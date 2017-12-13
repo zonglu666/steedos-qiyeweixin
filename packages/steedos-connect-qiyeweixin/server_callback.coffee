@@ -66,9 +66,9 @@ JsonRoutes.add "post", "/api/qiyeweixin/callback", (req, res, next) ->
 			# 公司变更
 			# when 'change_auth'
 
-			# 通讯录变更
-			# when 'change_contact'
-				# ChangeContact message
+			#通讯录变更
+			when 'change_contact'
+				ChangeContact message
 
 # 通讯录变更
 ChangeContact = (message)->

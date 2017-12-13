@@ -133,6 +133,7 @@ Qiyeweixin.getAdminList =(auth_corpid,agentid)->
 
 # 通讯录变更
 Qiyeweixin.changeContact = (message)->
+	console.log message
 	switch message.ChangeType
 		when 'create_user'
 			console.log "create_user"
@@ -143,7 +144,7 @@ Qiyeweixin.changeContact = (message)->
 			createUser us_doc
 			# 调用新增成员方法
 		when 'update_user'
-			#考虑由于userId也是可修改的，虽然只能修改一次，但是如果修改的是userid,则要先删除，后增加
+			#考虑由于userId也是可修改的，虽然只能修改一次
 			up_us = db.users.find({"services.qiyeweixin.id": message.UserID})
 			if up_us
 				u = up_us
@@ -155,7 +156,8 @@ Qiyeweixin.changeContact = (message)->
 					u.services.qiyeweixin.id = message.NewUserID
 				u.modified = new Date()
 				console.log up_us._id
-				db.users.direct.update(up_us._id,{$set:{modified:new Date()}})
+				console.log u.name
+				#db.users.direct.update(up_us._id,{$set:{modified:new Date()}})
 				db.users.direct.update(up_us._id,{$set:u})
 				 #updateUser(u,up_us)
 			# else
@@ -164,17 +166,58 @@ Qiyeweixin.changeContact = (message)->
 			# 调用修改成员方法
 		when 'delete_user'
 			console.log "delete_user"
-			dt_us = db.users.find({"services.qiyeweixin.id": message.UserID})
+			dt_us = db.users.findOne({"services.qiyeweixin.id": message.UserID})
 			if dt_us
-				db.users.direct.remove({"services.qiyeweixin.id": message.UserID})
+				db.users.direct.remove({_id: dt_us._id})
 			# 调用删除成员方法
 		when 'create_party'
+			org_doc = {}
+			orgParent = {}
+			org_doc._id = "qywx-" + message.AuthCorpId + "-" + message.Id
+			org_doc.name = message.Name
+			if message.ParentId >= 1
+				orgParent = db.organizations.findOne(_id:"qywx-" + message.AuthCorpId + "-" + message.ParentId)
+				if orgParent
+					org_doc.parent = orgParent._id
+					org_doc.fullname = orgParent.calculateFullname()+"/"+message.Name
+			org_doc.sort_no = 100
+			org_doc.created = new Dte()
+			org_doc.modified = new Date()
+			# org_doc.created_by = 下一步
+			# org_doc.modified_by = 
+			if message.Id == 1
+				org_doc.is_company = true
+			space_id = "qywx-" + message.AuthCorpId
+			space = db.spaces.findOne({_id: space_id})
+			if space
+				org_doc.space = space._id
+				db.organizations.direct.insert org_doc
+				children = orgParent?.children
+				children.push org_doc._id
+				db.organizations.direct.update({_id:orgParent._id},{$set:{children:children,modified:new Date()}})
 			console.log "create_party"
 			# 调用新增部门方法
 		when 'update_party'
+			org_doc = db.organizations.findOne({_id:"qywx-" + message.AuthCorpId + "-" + message.Id})
+			if org_doc
+				if org_doc.name != message.Name
+					org_doc.name = message.Name
+				if org_doc.parent>=1
+					org_doc.parent ="qywx-" + message.AuthCorpId+message.ParentId
+				org_doc.fullname = db.organizations.findOne({_id:org_doc.parent}).calculateFullname()+"/"+org_doc.name
+				if org_doc.hasOwnProperty('name') || org_doc.hasOwnProperty('parent')
+					org_doc.modified = now
+					# org_doc.modified_by = owner_id
+					db.organizations.direct.update(org_doc._id, {$set: org_doc})
+					org_doc.children?.forEach (children_org)->
+						fullname = org_doc.calculateFullname()+'/'+children_org.name
+						db.organizations.direct.update({_id:children_org},{$set:{fullname:fullname,modified:new Date()}})
 			console.log "update_party"
 			# 调用修改部门方法
 		when 'delete_party'
+			org_doc = db.organizations.findOne({_id:"qywx-" + message.AuthCorpId + "-" + message.Id})
+			if org_doc and !org_doc.children #部门内又成员也不可以删除，但是暂时没做这个判断
+				db.organizations.direct.remove(_id:"qywx-" + message.AuthCorpId + "-" + message.Id)
 			console.log "delete_party"
 			# 调用删除部门方法
 		when 'update_tag'
