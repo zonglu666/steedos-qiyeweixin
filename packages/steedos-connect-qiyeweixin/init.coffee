@@ -25,7 +25,7 @@ Init.testCreateOrganization = ()->
 			status: 1,
 			isleader: 0,
 			english_name: '',
-			 order: [ 0 ]
+			order: [ 0 ]
 		}
 	]
 	space_id = 'qywx-123456879'
