@@ -13,14 +13,16 @@ Npm.depends({
   'redis':'2.8.0',
   'url':'0.11.0',
   'querystring':'0.2.0',
-  'xml2json':'0.11.0'
+  'xml2json':'0.11.0',
+  'cookies': "0.6.1",
 });
 
 Package.onUse(function(api) {
   api.versionsFrom("METEOR@1.0.3");
+  api.use('session');
   api.use('steedos:base');
-    api.use('steedos:accounts');
-    api.use('steedos:theme');
+  api.use('steedos:accounts');
+  api.use('steedos:theme');
   api.use('accounts-base', ['client', 'server']);
   api.imply('accounts-base', ['client', 'server']);
   api.use('accounts-oauth', ['client', 'server']);

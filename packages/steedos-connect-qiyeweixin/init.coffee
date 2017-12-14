@@ -1,3 +1,18 @@
+# ServiceConfiguration.configurations.upsert(
+#   { service: 'qiyeweixin' },
+#   {
+#     $set: {
+# 	    token: "steedos",
+# 		encodingAESKey: "vr8r85bhgaruo482zilcyf6uezqwpxpf88w77t70dow",
+# 		corpid: "wweee647a39f9efa30",
+# 		provider_secret:"TV7SN_yriFNdL5Fc3V_DXncINv36EhlvJBGPD01D-Cw",
+# 		suite_id: "tje46bd4191785f45a",
+#     	suite_secret: "dVh0AjRVLDvqwaSUDBQlc39Moeo2HQ0go_UVkLYzqps",
+#     	suite_ticket:"",
+#     	suite_access_token:""
+#     }
+#   }
+# );
 @Init = {}
 # Init.testCreateOrganization()
 Init.testCreateOrganization = ()->

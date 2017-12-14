@@ -1,19 +1,39 @@
 parser = Npm.require('xml2json')
 WXBizMsgCrypt = Npm.require('wechat-crypto')
 
-config = ServiceConfiguration.configurations.findOne({service: "qiyeweixin"},{})
+config = ServiceConfiguration.configurations.findOne({service: "qiyeweixin"})
 
-newCrypt = new WXBizMsgCrypt(config?.token, config?.encodingAESKey, config?.corpId)
+newCrypt = new WXBizMsgCrypt(config?.token, config?.encodingAESKey, config?.corpid)
 TICKET_EXPIRES_IN = config.ticket_expires_in || 1000 * 60 * 20 #20分钟
+
+# 企业微信免登给用户设置cookies
+JsonRoutes.add "get", "/api/qiyeweixin/sso_steedos", (req, res, next) ->
+	o = ServiceConfiguration.configurations.findOne({service: "qiyeweixin"})
+	# 获取服务商的token
+	at = Qiyeweixin.getProviderToken o.corpid,o.provider_secret
+	if at&&at.provider_access_token
+		loginInfo = Qiyeweixin.getLoginInfo at.provider_access_token,req.query.auth_code
+		# user = db.users.findOne {'services.qiyeweixin.id': loginInfo?.user_info?.userid}
+		user = db.users.findOne {'_id':'vmGnPPSnxepZeSLKh'}
+		if user
+			# 验证成功，登录
+			authToken = Accounts._generateStampedLoginToken()
+			hashedToken = Accounts._hashStampedToken authToken
+			Accounts._insertHashedLoginToken user._id,hashedToken
+			Setup.setAuthCookies req,res,user._id,authToken.token
+			res.writeHead 301, {'Location': '/'}
+			res.end 'success'
+		else
+			res.reply "用户不存在!"
+	else
+		res.reply "用户不存在!"
+
 
 # 创建套件使用，验证回调接口可用性
 JsonRoutes.add "get", "/api/qiyeweixin/callback", (req, res, next) ->
-	console.log req.query
 	result = newCrypt.decrypt req.query.echostr
-	console.log result
 	res.writeHead 200, {"Content-Type":"text/plain"}
 	res.end result.message
-
 
 JsonRoutes.add "post", "/api/qiyeweixin/callback", (req, res, next) ->
 	postData = ''
@@ -109,6 +129,7 @@ CreateAuth = (message)->
 			console.log permanent_code
 			# 当下授权的access_token
 			if at&&at.access_token
+				SaveConfig permanent_code,at.access_token
 				# 初始化公司
 				auth_corp_info.access_token = at.access_token
 				auth_corp_info.permanent_code = permanent_code
@@ -131,3 +152,16 @@ SuiteTicket = (message)->
 						"modified": true
 					}
 				})
+
+# 配置文件保存，暂时使用，以后会删除该方法
+SaveConfig = (permanent_code,access_token)->
+	o = ServiceConfiguration.configurations.findOne({service: "qiyeweixin"})
+	if o
+		ServiceConfiguration.configurations.update(o._id,
+			{
+				$set: {
+					"permanent_code": permanent_code,
+					"access_token": access_token
+				}
+			})
+

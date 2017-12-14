@@ -65,6 +65,11 @@
       "resolved": "https://registry.npmjs.org/commander/-/commander-2.12.2.tgz",
       "from": "commander@>=2.9.0 <3.0.0"
     },
+    "cookies": {
+      "version": "0.6.1",
+      "resolved": "https://registry.npmjs.org/cookies/-/cookies-0.6.1.tgz",
+      "from": "cookies@0.6.1"
+    },
     "core-util-is": {
       "version": "1.0.2",
       "resolved": "https://registry.npmjs.org/core-util-is/-/core-util-is-1.0.2.tgz",
@@ -94,6 +99,11 @@
       "version": "1.0.0",
       "resolved": "https://registry.npmjs.org/delayed-stream/-/delayed-stream-1.0.0.tgz",
       "from": "delayed-stream@>=1.0.0 <1.1.0"
+    },
+    "depd": {
+      "version": "1.1.1",
+      "resolved": "https://registry.npmjs.org/depd/-/depd-1.1.1.tgz",
+      "from": "depd@>=1.1.0 <1.2.0"
     },
     "double-ended-queue": {
       "version": "2.1.0-0",
@@ -203,7 +213,7 @@
         "hoek": {
           "version": "4.2.0",
           "resolved": "https://registry.npmjs.org/hoek/-/hoek-4.2.0.tgz",
-          "from": "hoek@4.x.x"
+          "from": "hoek@>=4.0.0 <5.0.0"
         }
       }
     },
@@ -216,6 +226,11 @@
       "version": "4.0.1",
       "resolved": "https://registry.npmjs.org/jsonpointer/-/jsonpointer-4.0.1.tgz",
       "from": "jsonpointer@>=4.0.0 <5.0.0"
+    },
+    "keygrip": {
+      "version": "1.0.2",
+      "resolved": "https://registry.npmjs.org/keygrip/-/keygrip-1.0.2.tgz",
+      "from": "keygrip@>=1.0.0 <1.1.0"
     },
     "lodash": {
       "version": "4.17.4",
@@ -370,7 +385,7 @@
         "hoek": {
           "version": "4.2.0",
           "resolved": "https://registry.npmjs.org/hoek/-/hoek-4.2.0.tgz",
-          "from": "hoek@4.x.x"
+          "from": "hoek@>=4.0.0 <5.0.0"
         }
       }
     },
