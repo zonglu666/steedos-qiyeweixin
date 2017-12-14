@@ -39,7 +39,6 @@ Package.onUse(function(api) {
   api.addFiles('server_callback.coffee', 'server');
   api.addFiles('qywx.coffee', 'server');
   api.addFiles('qywx_api.coffee', 'server');
-
-
+  api.addFiles('init.coffee', 'server');
   api.export('Qiyeweixin');
 });

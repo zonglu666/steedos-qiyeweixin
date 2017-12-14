@@ -109,8 +109,11 @@ CreateAuth = (message)->
 			console.log permanent_code
 			# 当下授权的access_token
 			if at&&at.access_token
-				# 同步公司
-				Qiyeweixin.syncCompany at.access_token,auth_corp_info,auth_info,auth_user_info,permanent_code
+				# 初始化公司
+				auth_corp_info.access_token = at.access_token
+				auth_corp_info.permanent_code = permanent_code
+				auth_corp_info.space_id = "qywx-" + auth_corp_info.corpid
+				Qiyeweixin.initCompany auth_corp_info,auth_info
 
 # 根据suite_ticket，获取AccessToken
 SuiteTicket = (message)->
