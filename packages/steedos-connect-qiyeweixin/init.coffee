@@ -1,4 +1,59 @@
 @Init = {}
+# Init.testCreateOrganization()
+Init.testCreateOrganization = ()->
+	org = { id: 1, name: '上海华炎软件科技有限公司', parentid: 0, order: 100000000 }
+	user_data = [
+		{
+			userid: 'ZhuangJianGuo',
+			name: '庄建国',
+			department: [ 1,2 ],
+			position: '',
+			gender: '1',
+			avatar: 'http://p.qlogo.cn/bizmail/Ige40uvGu3aTucNNPATanYiaDDp8ZpvSK6RHD8gksjjTibB5KkXiaH9Bw/0',
+			status: 1,   
+			isleader: 1,
+			english_name: '',
+			order: [ 12288 ]
+		},
+		{
+			userid: 'LiZheng',
+			name: '李征',
+			department: [ 1,3 ],
+			position: '',
+			gender: '1',
+			avatar: 'http://p.qlogo.cn/bizmail/PmWNCxGwjF1ib6Ubl8pOjRojBMHRxLHEhjX10XSUaMq2cF0FAQWVNJg/0',
+			status: 1,
+			isleader: 0,
+			english_name: '',
+			 order: [ 0 ]
+		}
+	]
+	space_id = 'qywx-123456879'
+	createOrganization org,user_data,space_id
+
+createOrganization = (org,user_data,space_id)->
+
+	
+createSpaceUser = (user,org,space_id)->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # Init.test()
 Init.test = ()->
 	delete_users = []

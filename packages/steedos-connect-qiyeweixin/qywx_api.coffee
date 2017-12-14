@@ -282,7 +282,7 @@ Qiyeweixin.initCompany = (auth_corp_info,auth_info)->
 		createOrganization org_data,space_id
 
 
-createOrganization = (org_data,user_data,space_id)->
+createOrganization = (org,user_data,space_id)->
 	
 createSpaceUser = (user,org,space_id)->
 	
