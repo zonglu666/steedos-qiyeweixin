@@ -133,18 +133,22 @@ Qiyeweixin.getAdminList =(auth_corpid,agentid)->
 
 # 通讯录变更
 Qiyeweixin.changeContact = (message)->
+	console.log message
 	switch message.ChangeType
 		when 'create_user'
 			console.log "create_user"
-			us_doc = {}
-			us_doc.name = message.Name
-			us_doc.avatar = message.Avatar
-			us_doc.userid = message.UserID
-			createUser us_doc
+			us_doc = db.users.findOne({"services.qiyeweixin.id": message.UserID})
+			if !us_doc
+				us_doc = {}
+				us_doc.name = message.Name
+				us_doc.avatar = message.Avatar
+				us_doc.userid = message.UserID
+				
+				createUser us_doc
 			# 调用新增成员方法
 		when 'update_user'
-			#考虑由于userId也是可修改的，虽然只能修改一次，但是如果修改的是userid,则要先删除，后增加
-			up_us = db.users.find({"services.qiyeweixin.id": message.UserID})
+			#考虑由于userId也是可修改的，虽然只能修改一次
+			up_us = db.users.findOne({"services.qiyeweixin.id": message.UserID})
 			if up_us
 				u = up_us
 				if message.Name
@@ -154,8 +158,7 @@ Qiyeweixin.changeContact = (message)->
 				if message.NewUserID
 					u.services.qiyeweixin.id = message.NewUserID
 				u.modified = new Date()
-				console.log up_us._id
-				db.users.direct.update(up_us._id,{$set:{modified:new Date()}})
+				#db.users.direct.update(up_us._id,{$set:{modified:new Date()}})
 				db.users.direct.update(up_us._id,{$set:u})
 				 #updateUser(u,up_us)
 			# else
@@ -164,23 +167,67 @@ Qiyeweixin.changeContact = (message)->
 			# 调用修改成员方法
 		when 'delete_user'
 			console.log "delete_user"
-			dt_us = db.users.find({"services.qiyeweixin.id": message.UserID})
+			dt_us = db.users.findOne({"services.qiyeweixin.id": message.UserID})
 			if dt_us
-				db.users.direct.remove({"services.qiyeweixin.id": message.UserID})
+				db.users.direct.remove({_id: dt_us._id})
 			# 调用删除成员方法
 		when 'create_party'
-			console.log "create_party"
+			org_doc = db.organizations.findOne({_id:"qywx-" + message.AuthCorpId + "-" + message.Id})
+			if !org_doc
+				org_doc = {}
+				orgParent = {}
+				org_doc._id = "qywx-" + message.AuthCorpId + "-" + message.Id
+				org_doc.name = message.Name
+				org_doc.fullname =message.Name
+				if message.ParentId >= 1
+					orgParent = db.organizations.findOne(_id:"qywx-" + message.AuthCorpId + "-" + message.ParentId)
+					if orgParent
+						org_doc.parent = orgParent._id
+						org_doc.fullname = orgParent.calculateFullname()+"/"+message.Name
+				org_doc.sort_no = 100
+				org_doc.created = new Date()
+				org_doc.modified = new Date()
+				# org_doc.created_by = 下一步
+				# org_doc.modified_by = 
+				if message.Id == 1
+					org_doc.is_company = true
+				space_id = "qywx-" + message.AuthCorpId
+				space = db.spaces.findOne({_id: space_id})
+				if space
+					org_doc.space = space._id
+					db.organizations.direct.insert org_doc
+					children = orgParent?.children || []
+					children.push org_doc._id
+					db.organizations.direct.update({_id:orgParent._id},{$set:{children:children,modified:new Date()}})
+				console.log "create_party"
 			# 调用新增部门方法
 		when 'update_party'
+			org_doc = db.organizations.findOne({_id:"qywx-" + message.AuthCorpId + "-" + message.Id})
+			if org_doc
+				doc = {}
+				if org_doc.name != message.Name
+					doc.name = message.Name
+				if message.ParentId>=1
+					doc.parent ="qywx-" + message.AuthCorpId+'_'+message.ParentId
+					doc.fullname = db.organizations.findOne({_id:org_doc.parent}).calculateFullname()+"/"+org_doc.name
+				if org_doc.hasOwnProperty('name') || org_doc.hasOwnProperty('parent')
+					doc.modified = new Date()
+					# org_doc.modified_by = owner_id
+					db.organizations.direct.update(org_doc._id, {$set: doc})
+					org_doc.children?.forEach (children_org)->
+						fullname = org_doc.calculateFullname()+'/'+children_org.name
+						db.organizations.direct.update({_id:children_org},{$set:{fullname:fullname,modified:new Date()}})
 			console.log "update_party"
 			# 调用修改部门方法
 		when 'delete_party'
+			org_doc = db.organizations.findOne({_id:"qywx-" + message.AuthCorpId + "-" + message.Id})
+			if org_doc and !org_doc.children #部门内又成员也不可以删除，但是暂时没做这个判断
+				db.organizations.direct.remove(_id:"qywx-" + message.AuthCorpId + "-" + message.Id)
 			console.log "delete_party"
 			# 调用删除部门方法
 		when 'update_tag'
 			console.log "update_tag"
 			# 调用修改标签方法
-
 # 初始化公司
 Qiyeweixin.initCompany = (auth_corp_info,auth_info)->
 ## 命名规则与钉钉保持一致
