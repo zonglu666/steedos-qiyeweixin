@@ -258,6 +258,7 @@ Qiyeweixin.initCompany = (auth_corp_info,auth_info)->
 			if admin_user
 				admins.push admin_user._id
 	auth_corp_info.owner = admins[0]
+	auth_corp_info.admins = admins
 
 	# space表，初始化新工作区
 	createSpace auth_corp_info
@@ -266,35 +267,32 @@ Qiyeweixin.initCompany = (auth_corp_info,auth_info)->
 	org_data = Qiyeweixin.getDepartmentList auth_corp_info.access_token
 	# 根据部门获取成员信息
 	org_data.forEach (org)->
-		
 		user_data = Qiyeweixin.getUserList auth_corp_info.access_token,org.id
 		# 循环每个成员
 		user_data.forEach (u)->
 			# user表，创建新用户
-			createUser u
+			user_id = createUser u
+			user = {}
+			user._id = user_id
+			user.name = u.name
+			user.department = u.department
+			# space_user表
+			createSpaceUser user,org,space_id
 		# organizations表，新增
 		createOrganization org_data,space_id
 
-	# 1.首先要获取用户信息，导入user表，工作区和部门都需要用户这个表数据
-	# 根据部门获取成员信息
-	org_data.forEach (org)->
-		user_data = Qiyeweixin.getUserList auth_corp_info.access_token,org.id
-		# 循环每个成员
-		user_data.forEach (u)->
-			# user表，创建新用户
-			createUser u
-	
-	
 
 createOrganization = (org_data,user_data,space_id)->
-
-
+	
+createSpaceUser = (user,org,space_id)->
+	
+	
 createSpace = (auth_corp_info)->
 	s_doc = {}
 	s_doc._id = auth_corp_info.space_id
 	s_doc.name = auth_corp_info.corp_name
 	s_doc.owner = auth_corp_info.owner
-	s_doc.admins = admins
+	s_doc.admins = auth_corp_info.admins
 	s_doc.is_deleted = false
 	s_doc.created = new Date
 	s_doc.created_by = auth_corp_info.owner
@@ -316,7 +314,8 @@ createUser = (user)->
 	doc.modified = new Date
 	doc.services = {qiyeweixin:{id: user.userid}}
 	doc.avatarURL = user.avatar
-	db.users.direct.insert(doc)
+	user_id = db.users.direct.insert(doc)
+	return user_id
 
 
 

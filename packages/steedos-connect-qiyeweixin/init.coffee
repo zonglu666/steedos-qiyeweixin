@@ -46,9 +46,10 @@ createOrganization = (org_data,user_data,space_id)->
 			org_doc.parent = space_id + "-" + org.parentid
 		if org.id == 1
 			org_doc.is_company = true
+		
 		org_doc.sort_no = org.order
 		org_doc.created = new Date
-		console.log org_doc
+
 		db.organizations.direct.insert(org_doc)
 
 
