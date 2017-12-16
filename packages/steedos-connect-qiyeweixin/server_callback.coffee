@@ -105,7 +105,6 @@ ChangeContact = (message)->
 
 # 取消授权，更新space表=============OK
 CancelAuth = (message)->
-	console.log "=========取消授权========="
 	corp_id = message.AuthCorpId
 	space = db.spaces.findOne({'services.qiyeweixin.corp_id': corp_id})
 	if space
@@ -150,7 +149,6 @@ initCompany = (services,name)->
 	# 查找是否存在该工作区，存在更新，不存在新增
 	space = db.spaces.findOne {"services.qiyeweixin.corp_id": services.corp_id}
 	if space
-		console.log "更新"
 		# 更新工作区，只更新services基本信息
 		services.remote_modified = new Date
 		services.need_sync = true
@@ -161,7 +159,6 @@ initCompany = (services,name)->
 		)
 	else
 		# 新增工作区，只新增services基本信息
-		console.log "新增"
 		s_doc = {}
 		s_doc._id = 'qywx-' + services.corp_id
 		s_doc.name = name
