@@ -96,6 +96,7 @@ ChangeContact = (message)->
 	if space
 		s_qywx = space.services.qiyeweixin
 		s_qywx.romote_modified = new Date
+		s_qywx.need_sync = true
 		db.spaces.direct.update(
 			{_id: space._id},
 			{
@@ -110,11 +111,10 @@ CancelAuth = (message)->
 	if space
 		s_qywx = space.services.qiyeweixin
 		s_qywx.permanent_code = undefined
-		s_qywx.remote_modified = undefined
+		s_qywx.need_sync = false
 		db.spaces.direct.update(
 			{_id: space._id},
-			{$set: {'services.qiyeweixin': s_qywx}},
-			{$currentDate:{modified: true}}
+			{$set: {'services.qiyeweixin': s_qywx}}
 		)
 				
 
@@ -153,6 +153,7 @@ initCompany = (services,name)->
 		console.log "更新"
 		# 更新工作区，只更新services基本信息
 		services.remote_modified = new Date
+		services.need_sync = true
 		modified = new Date
 		db.spaces.direct.update(
 			{_id:space._id},
@@ -166,8 +167,7 @@ initCompany = (services,name)->
 		s_doc.name = name
 		s_doc.is_deleted = false
 		s_doc.created = new Date
-		s_doc.modified = new Date
-		services.sync_modified = new Date
+		services.need_sync = true
 		services.remote_modified = new Date
 		s_doc.services = {qiyeweixin:services}
 		db.spaces.direct.insert s_doc
