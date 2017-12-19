@@ -90,12 +90,11 @@ JsonRoutes.add "get", "/api/qiyeweixin/sso_steedos", (req, res, next) ->
 		res.reply "用户不存在!"
 
 # 通讯录变更，更新space表=============未测试
-ChangeContact = (message)->
-	corp_id = message.AuthCorpId
+ChangeContact = (corp_id)->
 	space = db.spaces.findOne({'services.qiyeweixin.corp_id': corp_id})
 	if space
 		s_qywx = space.services.qiyeweixin
-		s_qywx.romote_modified = new Date
+		s_qywx.remote_modified = new Date
 		s_qywx.need_sync = true
 		db.spaces.direct.update(
 			{_id: space._id},
@@ -123,7 +122,9 @@ CreateAuth = (message)->
 	if o
 		# 获取企业永久授权码
 		r = Qiyeweixin.getPermanentCode message.SuiteId,message.AuthCode,o.suite_access_token
+		console.log r
 		if r&&r?.permanent_code
+			console.log "===========jinru2222222==========="
 			# 永久授权码
 			permanent_code = r.permanent_code
 			# 授权企业信息
@@ -132,44 +133,39 @@ CreateAuth = (message)->
 			auth_info = r.auth_info
 			# 授权管理员信息
 			auth_user_info = r.auth_user_info
-			# 根据永久授权码获取access_token
-			at = Qiyeweixin.getCorpToken o.suite_id,auth_corp_info.corpid,permanent_code,o.suite_access_token
-			# 当下授权的access_token
-			if at&&at.access_token
-				services = {}
-				services.corp_id = auth_corp_info.corpid
-				services.access_token = at.access_token
-				services.permanent_code = permanent_code
-				services.auth_user_id = auth_user_info.userid
-				services.agentid = auth_info.agent[0].agentid
-				initCompany services,auth_corp_info.corp_name
+			service = {}
+			service.corp_id = auth_corp_info.corpid
+			service.permanent_code = permanent_code
+			service.auth_user_id = auth_user_info.userid
+			service.agentid = auth_info.agent[0].agentid
+			initSpace service,auth_corp_info.corp_name
 
-initCompany = (services,name)->
-	console.log services
+initSpace = (service,name)->
+	console.log service
 	# 查找是否存在该工作区，存在更新，不存在新增
-	space = db.spaces.findOne {"services.qiyeweixin.corp_id": services.corp_id}
+	space = db.spaces.findOne {"services.qiyeweixin.corp_id": service.corp_id}
 	if space
-		# 更新工作区，只更新services基本信息
-		services.remote_modified = new Date
-		services.need_sync = true
+		# 更新工作区，只更新service基本信息
+		service.remote_modified = new Date
+		service.need_sync = true
 		modified = new Date
 		db.spaces.direct.update(
 			{_id:space._id},
-			{$set:{modified:modified,'services.qiyeweixin':services}}
+			{$set:{modified:modified,'services.qiyeweixin':service}}
 		)
 	else
-		# 新增工作区，只新增services基本信息
-		s_doc = {}
-		s_doc._id = 'qywx-' + services.corp_id
-		s_doc.name = name
-		s_doc.is_deleted = false
-		s_doc.created = new Date
-		services.need_sync = true
-		services.remote_modified = new Date
-		s_doc.services = {qiyeweixin:services}
-		db.spaces.direct.insert s_doc
+		# 新增工作区，只新增service基本信息
+		doc = {}
+		doc._id = 'qywx-' + service.corp_id
+		doc.name = name
+		doc.is_deleted = false
+		doc.created = new Date
+		service.need_sync = true
+		service.remote_modified = new Date
+		doc.services = {qiyeweixin:service}
+		db.spaces.direct.insert doc
 
-# 根据suite_ticket，获取AccessToken
+# 根据suite_ticket，获取suite_access_token
 SuiteTicket = (message)->
 	o = ServiceConfiguration.configurations.findOne({service: "qiyeweixin"})
 	if o
