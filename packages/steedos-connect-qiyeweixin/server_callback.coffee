@@ -60,9 +60,10 @@ JsonRoutes.add "post", "/api/qiyeweixin/callback", (req, res, next) ->
 				res.end result?.message
 				CancelAuth message
 
-			# 公司变更
-			# when 'change_auth'
-
+			# 授权变更
+			when 'change_auth'
+				ChangeContact message.AuthCorpId
+				
 			# 通讯录变更
 			when 'change_contact'
 				ChangeContact message.AuthCorpId
@@ -122,9 +123,7 @@ CreateAuth = (message)->
 	if o
 		# 获取企业永久授权码
 		r = Qiyeweixin.getPermanentCode message.SuiteId,message.AuthCode,o.suite_access_token
-		console.log r
 		if r&&r?.permanent_code
-			console.log "===========jinru2222222==========="
 			# 永久授权码
 			permanent_code = r.permanent_code
 			# 授权企业信息
@@ -141,7 +140,6 @@ CreateAuth = (message)->
 			initSpace service,auth_corp_info.corp_name
 
 initSpace = (service,name)->
-	console.log service
 	# 查找是否存在该工作区，存在更新，不存在新增
 	space = db.spaces.findOne {"services.qiyeweixin.corp_id": service.corp_id}
 	if space
@@ -151,7 +149,12 @@ initSpace = (service,name)->
 		modified = new Date
 		db.spaces.direct.update(
 			{_id:space._id},
-			{$set:{modified:modified,'services.qiyeweixin':service}}
+			{$set:{
+				modified:modified,
+				name:name,
+				'services.qiyeweixin':service
+				}
+			}
 		)
 	else
 		# 新增工作区，只新增service基本信息

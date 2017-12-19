@@ -15,7 +15,8 @@ Qiyeweixin.getLoginInfo = (access_token,auth_code) ->
 		return response.data
 	catch err
 		console.error err
-		throw _.extend(new Error("Failed to complete OAuth handshake with suiteAccessTokenGet. " + err), {response: err})
+		throw _.extend(new Error("Failed to complete OAuth handshake with getLoginInfo. " + err), {response: err})
+
 # 获取服务商的token
 Qiyeweixin.getProviderToken = (corpid,provider_secret) ->
 	try
@@ -34,7 +35,7 @@ Qiyeweixin.getProviderToken = (corpid,provider_secret) ->
 		return response.data
 	catch err
 		console.error err
-		throw _.extend(new Error("Failed to complete OAuth handshake with suiteAccessTokenGet. " + err), {response: err})
+		throw _.extend(new Error("Failed to complete OAuth handshake with getProviderToken. " + err), {response: err})
 		
 # 获取suite_access_token:OK
 Qiyeweixin.getSuiteAccessToken = (suite_id, suite_secret, suite_ticket) ->
@@ -55,7 +56,7 @@ Qiyeweixin.getSuiteAccessToken = (suite_id, suite_secret, suite_ticket) ->
 		return response.data
 	catch err
 		console.error err
-		throw _.extend(new Error("Failed to complete OAuth handshake with suiteAccessTokenGet. " + err), {response: err})
+		throw _.extend(new Error("Failed to complete OAuth handshake with getSuiteAccessToken. " + err), {response: err})
 
 # 获取预授权码:OK
 Qiyeweixin.getPreAuthCode = (suite_id,suite_access_token) ->
@@ -74,7 +75,7 @@ Qiyeweixin.getPreAuthCode = (suite_id,suite_access_token) ->
 		return response.data
 	catch err
 		console.error err
-		throw _.extend(new Error("Failed to complete OAuth handshake with suiteAccessTokenGet. " + err), {response: err})
+		throw _.extend(new Error("Failed to complete OAuth handshake with getPreAuthCode. " + err), {response: err})
 
 # 获取企业永久授权码
 Qiyeweixin.getPermanentCode = (suite_id,auth_code,suite_access_token) ->
@@ -94,9 +95,9 @@ Qiyeweixin.getPermanentCode = (suite_id,auth_code,suite_access_token) ->
 		return response.data
 	catch err
 		console.error err
-		throw _.extend(new Error("Failed to complete OAuth handshake with suiteAccessTokenGet. " + err), {response: err})
+		throw _.extend(new Error("Failed to complete OAuth handshake with getPermanentCode. " + err), {response: err})
 
-# 获取access_token
+# 获取CorpToken
 Qiyeweixin.getCorpToken = (suite_id,auth_corpid,permanent_code,suite_access_token) ->
 	try
 		data = {
@@ -115,9 +116,9 @@ Qiyeweixin.getCorpToken = (suite_id,auth_corpid,permanent_code,suite_access_toke
 		return response.data
 	catch err
 		console.error err
-		throw _.extend(new Error("Failed to complete OAuth handshake with suiteAccessTokenGet. " + err), {response: err})
+		throw _.extend(new Error("Failed to complete OAuth handshake with getCorpToken. " + err), {response: err})
 
-# 获取部门列表
+# 获取部门列表（全量）
 Qiyeweixin.getDepartmentList =(access_token)->
 	try
 		getDepartmentListUrl = "https://qyapi.weixin.qq.com/cgi-bin/department/list?access_token=" + access_token
@@ -147,6 +148,22 @@ Qiyeweixin.getUserList =(access_token,department_id)->
 		console.error err
 		throw _.extend(new Error("Failed to complete OAuth handshake with getUserList. " + err), {response: err})
 
+# 获取当前公司所有用户列表
+Qiyeweixin.getAllUserList =(access_token)->
+	try
+		getAllUserListUrl = "https://qyapi.weixin.qq.com/cgi-bin/user/list?access_token=" + access_token + "&department_id=1&fetch_child=1"
+		response = HTTP.get getAllUserListUrl
+		if response.error_code
+			console.error err
+			throw response.msg
+		if response.data.errcode>0 
+			throw response.data.errmsg
+		return response.data.userlist
+	catch err
+		console.error err
+		throw _.extend(new Error("Failed to complete OAuth handshake with getAllUserListUrl. " + err), {response: err})
+
+
 # 获取管理员列表
 Qiyeweixin.getAdminList =(auth_corpid,agentid)->
 	try
@@ -166,4 +183,4 @@ Qiyeweixin.getAdminList =(auth_corpid,agentid)->
 		return response.data.admin
 	catch err
 		console.error err
-		throw _.extend(new Error("Failed to complete OAuth handshake with suiteAccessTokenGet. " + err), {response: err})
+		throw _.extend(new Error("Failed to complete OAuth handshake with getAdminList. " + err), {response: err})

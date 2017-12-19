@@ -9,6 +9,8 @@ Qiyeweixin.testSyncCompany = ()->
 		Qiyeweixin.syncCompany space
 
 Qiyeweixin.syncCompany = (space)->
+	console.log "=============同步企业=============="
+	console.log space.name
 	service = space.services.qiyeweixin
 	space_id = space._id
 	# 根据永久授权码获取access_token
@@ -17,15 +19,20 @@ Qiyeweixin.syncCompany = (space)->
 	# 当下授权的access_token
 	if at&&at.access_token
 		service.access_token = at.access_token
+		console.log "access_token  ------> "+at.access_token
 	# 当前公司下的全部部门，用于删除多余的
 	allOrganizations = []
-	# 当前公司下的全部用户，用于删除多余的
+	# 当前公司下的全部已经添加的用户
 	allUsers = []
 	# 获取部门列表:ok
 	orgList = Qiyeweixin.getDepartmentList service.access_token
+	orgIds = orgList.map((m)->return m.id)
+	# 如果没有根部门，则初始化根部门
+	if orgIds.indexOf(1)==-1
+		initRootOrganization space,orgIds
+		allOrganizations.push space._id + '-1'
 	# 根据部门列表获取当前部门下的成员信息:ok
 	orgList.forEach (org)->
-		console.log orgList
 		userList = Qiyeweixin.getUserList service.access_token,org.id
 		orgUsers = []
 		userList.forEach (user)->
@@ -34,10 +41,9 @@ Qiyeweixin.syncCompany = (space)->
 			# 管理space_user表，，存在则修改，不存在则新增
 			user._id = _id
 			user.space = space_id
-			manageSpaceUser user
+			manageSpaceUser user,orgIds
 			orgUsers.push _id
 			allUsers.push _id
-		# 部门数据
 		org.users = orgUsers
 		org._id = space_id + '-' + org.id
 		org.fullname = org.name
@@ -50,26 +56,38 @@ Qiyeweixin.syncCompany = (space)->
 		if org.id == 1
 			org.is_company = true
 		else
-			orgparent = db.organizations.findOne({_id:org.parent},{fullname:1})
-			if orgparent && orgparent.fullname
-				org.fullname = orgparent.fullname + "/" + org.name
+			orgParent = db.organizations.findOne({_id:org.parent},{fullname:1})
+			if orgParent && orgParent.fullname
+				org.fullname = orgParent.fullname + "/" + org.name
 		# 管理organizations表，存在则修改，不存在则新增
 		manageOrganizations org
 		allOrganizations.push org._id
-	# 有问题
+	# 管理spaces表，增加管理员和拥有者和同步时间
 	manageSpaces space
-	# 当前公司所有的用户和部门，查找如果当前工作区下有多余的用户和部门，则删除
-	# console.log '===============所有用户和部门================'
-	# console.log allUsers
-	# console.log allOrganizations
-	# 管理spaces表，增加管理员和拥有者
-	
+	# 当前公司所有的用户和部门，查找如果当前工作区下有多余的space用户和部门，则删除
+	db.space_users.direct.remove({$and:[{space:space_id},{user:$nin:allUsers}]})
+	db.organizations.direct.remove({$and:[{space:space_id},{_id:$nin:allOrganizations}]})
 
+
+
+initRootOrganization = (space,orgIds)->
+	rootOrg = {}
+	rootOrg.id = 1
+	rootOrg._id = space._id + '-1'
+	rootOrg.space = space._id
+	rootOrg.name = space.name
+	rootOrg.fullname = space.name
+	rootOrg.parent = ''
+	rootOrg.children = orgIds.map((m)-> return space._id+'-'+m)
+	rootOrg.users = []
+	rootOrg.is_company = true
+	rootOrg.order = 100000000
+	manageOrganizations rootOrg
 
 manageSpaces = (space)->
 	service = space.services.qiyeweixin
 	space_admin_data = Qiyeweixin.getAdminList service.corp_id,service.agentid
-	aadmins = []
+	admins = []
 	space_admin_data.forEach (admin)->
 		if admin.auth_type
 			admin_user = db.users.findOne({"services.qiyeweixin.id": admin.userid},{_id:1})
@@ -79,8 +97,10 @@ manageSpaces = (space)->
 	doc.admins = admins
 	doc.owner = admins[0]
 	doc.modified = new Date
-	console.log "=============有问题==============="
-	console.log doc
+	service.sync_modified = new Date
+	service.need_sync = false
+	delete service.access_token
+	doc.services = {qiyeweixin:service}
 	db.spaces.direct.update(space._id, {$set: doc})
 manageOrganizations = (organization)->
 	org = db.organizations.findOne({_id: organization._id})
@@ -90,16 +110,15 @@ manageOrganizations = (organization)->
 	else
 		console.log "新增organizations"
 		addOrganization organization
-manageSpaceUser = (user)->
+manageSpaceUser = (user,orgIds)->
 	su = db.space_users.findOne({user: user._id})
 	if su
 		console.log "修改space_users"
-		updateSpaceUser su,user
+		updateSpaceUser su,user,orgIds
 	else
 		console.log "新增space_users"
-		addSpaceUser user
+		addSpaceUser user,orgIds
 manageUser = (user)->
-	# userid可能也会修改，旧的userid要删除
 	u = db.users.findOne({"services.qiyeweixin.id": user.userid})
 	userid = ''
 	if u
@@ -125,14 +144,17 @@ addOrganization = (organization)->
 	doc.created = new Date
 	doc.modified = new Date 
 	db.organizations.direct.insert doc
-addSpaceUser = (user)->
+addSpaceUser = (user,orgIds)->
 	doc = {}
 	doc._id = user.space + '-' +user.userid #_id = 工作区id-用户id
 	doc.user = user._id
 	doc.name = user.name
 	doc.space = user.space
 	#部门id = 工作区id-部门号
-	doc.organizations = user.department.map((m)-> return user.space+"-"+m)
+	organizations = user.department.filter((m)-> return m==1||orgIds.indexOf(m)>-1).map((m)-> return user.space+"-"+m)
+	if organizations==null||organizations.length==0
+		organizations.push user.space+"-1"
+	doc.organizations = organizations
 	doc.organization = doc.organizations[0]
 	doc.user_accepted = true
 	doc.created = new Date
@@ -150,12 +172,13 @@ addUser = (user)->
 	doc.created = new Date
 	doc.modified = new Date
 	doc.services = {qiyeweixin:{id: user.userid}}
-	userid = db.users.direct.insert(doc)
+	userid = db.users.insert(doc)
 	return userid
 updateOrganization = (old_org,new_org)->
 	doc = {}
 	if old_org.name != new_org.name
 		doc.name = new_org.name
+	if old_org.fullname != new_org.fullname
 		doc.fullname = new_org.fullname
 	if old_org.sort_no != new_org.order
 		doc.sort_no = new_org.order
@@ -165,18 +188,15 @@ updateOrganization = (old_org,new_org)->
 		doc.users = new_org.users
 	if old_org.children.sort().toString() != new_org.children.sort().toString()
 		doc.children = new_org.children
-	console.log doc
-	if doc.hasOwnProperty('name') || doc.hasOwnProperty('sort_no') || doc.hasOwnProperty('parent') || doc.hasOwnProperty('users') || doc.hasOwnProperty('children')
+	if doc.hasOwnProperty('name') || doc.hasOwnProperty('fullname') || doc.hasOwnProperty('sort_no') || doc.hasOwnProperty('parent') || doc.hasOwnProperty('users') || doc.hasOwnProperty('children')
 		db.organizations.direct.update(old_org._id, {$set: doc})
-updateSpaceUser = (old_su,new_su)->
+updateSpaceUser = (old_su,new_su,orgIds)->
 	doc = {}
 	if old_su.name != new_su.name
 		doc.name = new_su.name
 	if old_su.sort_no != new_su.order[0]
 		doc.sort_no = new_su.order[0]
-	organizations = []
-	new_su?.department.forEach (deptid)->
-		organizations.push new_su.space + "-" + deptid  #部门id = 工作区id-部门号
+	organizations = new_su.department.filter((m)-> return m==1||orgIds.indexOf(m)>-1).map((m)-> return new_su.space+"-"+m)
 	if old_su.organizations.sort().toString() != organizations.sort().toString()
 		doc.organizations = organizations
 		doc.organization = organizations[0]
@@ -190,7 +210,7 @@ updateUser = (old_user,new_user)->
 		doc.avatarURL = new_user.avatar
 	if doc.hasOwnProperty('name') || doc.hasOwnProperty('avatarURL')
 		doc.modified = new Date
-		db.users.direct.update(old_user._id, {$set: doc})
+		db.users.update(old_user._id, {$set: doc})
 
 	
 
