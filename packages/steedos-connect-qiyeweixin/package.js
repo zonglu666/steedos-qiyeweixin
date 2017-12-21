@@ -20,9 +20,9 @@ Npm.depends({
 Package.onUse(function(api) {
   api.versionsFrom("METEOR@1.0.3");
   api.use('session');
-  api.use('steedos:base');
-  api.use('steedos:accounts');
-  api.use('steedos:theme');
+  api.use('steedos:base@0.0.65');
+  api.use('steedos:accounts@0.0.24');
+  api.use('steedos:theme@0.0.29');
 
   api.use('accounts-base', ['client', 'server']);
   api.imply('accounts-base', ['client', 'server']);
