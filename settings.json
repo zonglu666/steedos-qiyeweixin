@@ -1,21 +1,27 @@
 {
-	"public": {
-		"webservices": {
-			"elasticsearch":{
-				"status": "active",
-				"url":"http://127.0.0.1:9200"
-			}
-		}
-	},
-	"records":{
-		"office_converter_path":"D:\\OfficeConverter\\OfficeConverter.exe",
-
-		"sync_interval":0,
-
-		"sync_limit_num":10,
-
-		"es_search_index": "steedos",
-
-		"cfs_file_server": "http://192.1.1.141:315"
+  "public" : {
+    "qiyeweixin":{
+      "authorize_uri":"https://open.weixin.qq.com/connect/oauth2/authorize"
+    }
+  },
+  "workflowTemplates": {
+    "path_cn": "/srv/git/workflow-templates/zh-cn/default",
+    "path_us": "/srv/git/workflow-templates/en-us/default"
+  },
+  "qiyeweixin":{
+    "sync_interval":600000,
+    "api":{
+      "getLoginInfo":"https://qyapi.weixin.qq.com/cgi-bin/service/get_login_info",
+      "getProviderToken":"https://qyapi.weixin.qq.com/cgi-bin/service/get_provider_token",
+      "getSuiteAccessToken":"https://qyapi.weixin.qq.com/cgi-bin/service/get_suite_token",
+      "getPreAuthCode":"https://qyapi.weixin.qq.com/cgi-bin/service/get_pre_auth_code",
+      "getPermanentCode":"https://qyapi.weixin.qq.com/cgi-bin/service/get_permanent_code",
+      "getCorpToken":"https://qyapi.weixin.qq.com/cgi-bin/service/get_corp_token",
+      "getDepartmentList":"https://qyapi.weixin.qq.com/cgi-bin/department/list",
+      "getUserList":"https://qyapi.weixin.qq.com/cgi-bin/user/list",
+      "getAllUserList":"https://qyapi.weixin.qq.com/cgi-bin/user/list",
+      "getAdminList":"https://qyapi.weixin.qq.com/cgi-bin/service/get_admin_list",
+      "getUserInfo3rd":"https://qyapi.weixin.qq.com/cgi-bin/service/getuserinfo3rd"
+    }
   }
 }

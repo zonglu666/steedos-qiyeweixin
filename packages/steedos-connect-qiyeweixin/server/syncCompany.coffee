@@ -1,6 +1,7 @@
 # 定时器
 Meteor.startup ()->
-	Meteor.setInterval(Qiyeweixin.startSyncCompany,600000)
+	if Meteor.settings.qiyeweixin?.sync_interval>0
+		Meteor.setInterval(Qiyeweixin.startSyncCompany,60000)
 
 # Qiyeweixin.startSyncCompany()
 Qiyeweixin.startSyncCompany = ()->
@@ -185,7 +186,6 @@ updateOrganization = (old_org,new_org)->
 	if old_org.children.sort().toString() != new_org.children.sort().toString()
 		doc.children = new_org.children
 	if doc.hasOwnProperty('name') || doc.hasOwnProperty('fullname') || doc.hasOwnProperty('sort_no') || doc.hasOwnProperty('parent') || doc.hasOwnProperty('users') || doc.hasOwnProperty('children')
-		doc.modified = new Date
 		db.organizations.direct.update(old_org._id, {$set: doc})
 updateSpaceUser = (old_su,new_su,orgIds)->
 	doc = {}
@@ -198,7 +198,6 @@ updateSpaceUser = (old_su,new_su,orgIds)->
 		doc.organizations = organizations
 		doc.organization = organizations[0]
 	if doc.hasOwnProperty('name') || doc.hasOwnProperty('sort_no') || doc.hasOwnProperty('organization')
-		doc.modified = new Date
 		db.space_users.direct.update(old_su._id, {$set: doc})
 updateUser = (old_user,new_user)->
 	doc = {}
