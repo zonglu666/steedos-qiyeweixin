@@ -184,3 +184,18 @@ Qiyeweixin.getAdminList =(auth_corpid,agentid)->
 	catch err
 		console.error err
 		throw _.extend(new Error("Failed to complete OAuth handshake with getAdminList. " + err), {response: err})
+
+# 获取用户信息信息
+Qiyeweixin.getUserInfo3rd = (code) ->
+	try
+		o = ServiceConfiguration.configurations.findOne({service: "qiyeweixin"},{suite_access_token:1})	
+		getUserInfo3rdUrl = "https://qyapi.weixin.qq.com/cgi-bin/service/getuserinfo3rd?access_token=" + o.suite_access_token + "&code=" + code
+		response = HTTP.get getUserInfo3rdUrl
+		if response.error_code
+			throw response.msg
+		if response.data.errcode>0 
+			throw response.data.errmsg
+		return response.data
+	catch err
+		console.error err
+		throw _.extend(new Error("Failed to complete OAuth handshake with getUserInfo3rdUrl. " + err), {response: err})

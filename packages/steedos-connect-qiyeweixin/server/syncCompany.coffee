@@ -1,6 +1,9 @@
-# Qiyeweixin.testSyncCompany()
-Qiyeweixin.testSyncCompany = ()->
-	# space = db.spaces.findOne({_id: 'qywx-wweee647a39f9efa30'})
+# 定时器
+Meteor.startup ()->
+	Meteor.setInterval(Qiyeweixin.startSyncCompany,600000)
+
+# Qiyeweixin.startSyncCompany()
+Qiyeweixin.startSyncCompany = ()->
 	total = db.spaces.find({'services.qiyeweixin.need_sync':true}).count()
 	i = 0
 	while(i < total)
@@ -9,8 +12,6 @@ Qiyeweixin.testSyncCompany = ()->
 		Qiyeweixin.syncCompany space
 
 Qiyeweixin.syncCompany = (space)->
-	console.log "=============同步企业=============="
-	console.log space.name
 	service = space.services.qiyeweixin
 	space_id = space._id
 	# 根据永久授权码获取access_token
@@ -19,7 +20,6 @@ Qiyeweixin.syncCompany = (space)->
 	# 当下授权的access_token
 	if at&&at.access_token
 		service.access_token = at.access_token
-		console.log "access_token  ------> "+at.access_token
 	# 当前公司下的全部部门，用于删除多余的
 	allOrganizations = []
 	# 当前公司下的全部已经添加的用户
@@ -62,13 +62,11 @@ Qiyeweixin.syncCompany = (space)->
 		# 管理organizations表，存在则修改，不存在则新增
 		manageOrganizations org
 		allOrganizations.push org._id
-	# 管理spaces表，增加管理员和拥有者和同步时间
+	# 管理spaces表，增加管理员、拥有者和当前的同步时间
 	manageSpaces space
-	# 当前公司所有的用户和部门，查找如果当前工作区下有多余的space用户和部门，则删除
+	# 当前公司所有的用户和部门，查找如果当前工作区下有多余的space_user和部门，则删除
 	db.space_users.direct.remove({$and:[{space:space_id},{user:$nin:allUsers}]})
 	db.organizations.direct.remove({$and:[{space:space_id},{_id:$nin:allOrganizations}]})
-
-
 
 initRootOrganization = (space,orgIds)->
 	rootOrg = {}
@@ -102,33 +100,31 @@ manageSpaces = (space)->
 	delete service.access_token
 	doc.services = {qiyeweixin:service}
 	db.spaces.direct.update(space._id, {$set: doc})
+
 manageOrganizations = (organization)->
 	org = db.organizations.findOne({_id: organization._id})
 	if org
-		console.log "修改organizations"
 		updateOrganization org,organization
 	else
-		console.log "新增organizations"
 		addOrganization organization
+
 manageSpaceUser = (user,orgIds)->
 	su = db.space_users.findOne({user: user._id})
 	if su
-		console.log "修改space_users"
 		updateSpaceUser su,user,orgIds
 	else
-		console.log "新增space_users"
 		addSpaceUser user,orgIds
+
 manageUser = (user)->
 	u = db.users.findOne({"services.qiyeweixin.id": user.userid})
 	userid = ''
 	if u
-		console.log "修改users"
 		userid = u._id
 		updateUser u,user
 	else
-		console.log "新增users"
 		userid = addUser user
 	return userid
+
 addOrganization = (organization)->
 	doc = {}
 	doc._id = organization._id

@@ -1,3 +1,4 @@
+Cookies = Npm.require("cookies")
 parser = Npm.require('xml2json')
 WXBizMsgCrypt = Npm.require('wechat-crypto')
 
@@ -7,14 +8,71 @@ newCrypt = new WXBizMsgCrypt(config?.token, config?.encodingAESKey, config?.corp
 TICKET_EXPIRES_IN = config.ticket_expires_in || 1000 * 60 * 20 #20分钟
 
 
-# 创建套件使用，验证回调接口可用性
+# 网页授权登录
+JsonRoutes.add "get", "/api/qiyeweixin/auth_login", (req, res, next) ->
+
+	cookies = new Cookies( req, res );
+
+	userId = cookies.get("X-User-Id")
+	authToken = cookies.get("X-Auth-Token")
+
+	if userId and authToken
+		Setup.clearAuthCookies(req, res)
+		hashedToken = Accounts._hashLoginToken(authToken)
+		Accounts.destroyToken(userId, hashedToken)
+
+	if req?.query?.code
+		userInfo = Qiyeweixin.getUserInfo3rd req.query.code
+		if userInfo?.UserId
+			user = db.users.findOne({'services.qiyeweixin.id': userInfo.UserId})
+			if user
+				# 验证成功，登录
+				authToken = Accounts._generateStampedLoginToken()
+				hashedToken = Accounts._hashStampedToken authToken
+				Accounts._insertHashedLoginToken user._id,hashedToken
+				Setup.setAuthCookies req,res,user._id,authToken.token
+				res.writeHead 301, {'Location': '/'}
+				res.end 'success'
+			else
+				res.end "用户不存在!"
+		else
+			res.end "未获取到用户信息!"
+	else
+		res.end "未获取到网页授权码!"
+
+
+# 从企业微信端单点登录:从浏览器后台管理页面“前往服务商后台”进入的网址
+JsonRoutes.add "get", "/api/qiyeweixin/sso_steedos", (req, res, next) ->
+	o = ServiceConfiguration.configurations.findOne({service: "qiyeweixin"})
+	# 获取服务商的token
+	at = Qiyeweixin.getProviderToken o.corpid,o.provider_secret
+	if at&&at.provider_access_token
+		loginInfo = Qiyeweixin.getLoginInfo at.provider_access_token,req.query.auth_code
+		if loginInfo?.user_info?.userid
+			user = db.users.findOne({'services.qiyeweixin.id': loginInfo.user_info.userid})
+			if user
+				# 验证成功，登录
+				authToken = Accounts._generateStampedLoginToken()
+				hashedToken = Accounts._hashStampedToken authToken
+				Accounts._insertHashedLoginToken user._id,hashedToken
+				Setup.setAuthCookies req,res,user._id,authToken.token
+				res.writeHead 301, {'Location': '/'}
+				res.end 'success'
+			else
+				res.end "用户不存在!"
+		else
+			res.end "未获取到用户信息!"
+	else
+		res.end "未获取到服务商的Token!"
+
+# 创建套件使用，验证第三方回调协议可用性
 JsonRoutes.add "get", "/api/qiyeweixin/callback", (req, res, next) ->
-	console.log "=============企业应用发送来的数据=============="
-	console.log req.query.echostr
+
 	result = newCrypt.decrypt req.query.echostr
 	res.writeHead 200, {"Content-Type":"text/plain"}
 	res.end result.message
 
+# 第三方回调协议
 JsonRoutes.add "post", "/api/qiyeweixin/callback", (req, res, next) ->
 	postData = ''
 	msg_signature = req.query.msg_signature
@@ -31,64 +89,42 @@ JsonRoutes.add "post", "/api/qiyeweixin/callback", (req, res, next) ->
 		jsonPostData = {}
 		jsonPostData = parser.toJson postData,{object: true} || {}
 
-		# 验证签名
-		# if msg_signature!=newCrypt.getSignature(timestamp, nonce, postData)
-		# 	res.writeHead 401
-		# 	res.end 'Invalid signature'
-		# 	return
-
 		result = newCrypt.decrypt jsonPostData?.xml?.Encrypt
 		json = parser.toJson result?.message,{object: true}
 		message = json?.xml || {}
-		console.log "============企业应用发送来的数据============"
-		console.log message
-		switch message?.InfoType
-			when 'suite_ticket'
-				SuiteTicket message
-				res.writeHead 200, {"Content-Type":"text/plain"}
-				res.end result?.message
-			# 授权成功：未完成
-			when 'create_auth'
-				# 必须在1秒内响应，保证用户体验
-				res.writeHead 200, {"Content-Type":"text/plain"}
-				res.end "success"
-				CreateAuth message
-			
-			# 取消授权
-			when 'cancel_auth'
-				res.writeHead 200, {"Content-Type":"text/plain"}
-				res.end result?.message
-				CancelAuth message
 
-			# 授权变更
-			when 'change_auth'
-				ChangeContact message.AuthCorpId
+		# # 接收事件推送
+		# if message?.MsgType =='event'
+		# 	console.log "=========事件推送=========="
+		# 	console.log message
+		# 第三方回调协议
+		if message?.InfoType
+			switch message.InfoType
+				when 'suite_ticket'
+					SuiteTicket message
+					res.writeHead 200, {"Content-Type":"text/plain"}
+					res.end result?.message
+				# 授权成功：未完成
+				when 'create_auth'
+					# 必须在1秒内响应，保证用户体验
+					res.writeHead 200, {"Content-Type":"text/plain"}
+					res.end "success"
+					CreateAuth message
 				
-			# 通讯录变更
-			when 'change_contact'
-				ChangeContact message.AuthCorpId
+				# 取消授权
+				when 'cancel_auth'
+					res.writeHead 200, {"Content-Type":"text/plain"}
+					res.end result?.message
+					CancelAuth message
 
-# 企业微信免登给用户设置cookies
-JsonRoutes.add "get", "/api/qiyeweixin/sso_steedos", (req, res, next) ->
-	o = ServiceConfiguration.configurations.findOne({service: "qiyeweixin"})
-	# 获取服务商的token
-	at = Qiyeweixin.getProviderToken o.corpid,o.provider_secret
-	if at&&at.provider_access_token
-		loginInfo = Qiyeweixin.getLoginInfo at.provider_access_token,req.query.auth_code
-		# user = db.users.findOne {'services.qiyeweixin.id': loginInfo?.user_info?.userid}
-		user = db.users.findOne {'_id':'vmGnPPSnxepZeSLKh'}
-		if user
-			# 验证成功，登录
-			authToken = Accounts._generateStampedLoginToken()
-			hashedToken = Accounts._hashStampedToken authToken
-			Accounts._insertHashedLoginToken user._id,hashedToken
-			Setup.setAuthCookies req,res,user._id,authToken.token
-			res.writeHead 301, {'Location': '/'}
-			res.end 'success'
-		else
-			res.reply "用户不存在!"
-	else
-		res.reply "用户不存在!"
+				# 授权变更
+				when 'change_auth'
+					ChangeContact message.AuthCorpId
+					
+				# 通讯录变更
+				when 'change_contact'
+					ChangeContact message.AuthCorpId
+
 
 # 通讯录变更，更新space表=============未测试
 ChangeContact = (corp_id)->

@@ -23,13 +23,14 @@ Package.onUse(function(api) {
   api.use('steedos:base');
   api.use('steedos:accounts');
   api.use('steedos:theme');
+
   api.use('accounts-base', ['client', 'server']);
   api.imply('accounts-base', ['client', 'server']);
   api.use('accounts-oauth', ['client', 'server']);
   api.use('simple:json-routes@2.1.0');
+  api.use('kadira:flow-router@2.10.1');
   api.use('coffeescript');
   api.use('mongo@1.1.12');
-
   api.use('oauth', ['client', 'server']);
   api.use('oauth2', ['client', 'server']);
   api.use('http', ['server']);
@@ -38,10 +39,11 @@ Package.onUse(function(api) {
   api.use('underscore', 'server');
   api.use('service-configuration',['client','server']);
 
-  api.addFiles('server_callback.coffee', 'server');
-  api.addFiles('qywx.coffee', 'server');
-  api.addFiles('qywx_api.coffee', 'server');
-  api.addFiles('init.coffee', 'server');
-  api.addFiles('syncCompany.coffee', 'server');
+  api.addFiles('server/server_callback.coffee', 'server');
+  api.addFiles('server/qywx.coffee', 'server');
+  api.addFiles('server/qywx_api.coffee', 'server');
+  api.addFiles('server/init.coffee', 'server');
+  api.addFiles('server/syncCompany.coffee', 'server');
+  // api.addFiles('client/router.coffee', 'client');
   api.export('Qiyeweixin');
 });
