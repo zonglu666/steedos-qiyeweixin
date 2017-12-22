@@ -1,15 +1,11 @@
 {
-  "public" : {
-    "qiyeweixin":{
-      "authorize_uri":"https://open.weixin.qq.com/connect/oauth2/authorize"
-    }
-  },
   "workflowTemplates": {
     "path_cn": "/srv/git/workflow-templates/zh-cn/default",
     "path_us": "/srv/git/workflow-templates/en-us/default"
   },
   "qiyeweixin":{
     "sync_interval":600000,
+    "authorize_uri":"https://open.weixin.qq.com/connect/oauth2/authorize",
     "api":{
       "getLoginInfo":"https://qyapi.weixin.qq.com/cgi-bin/service/get_login_info",
       "getProviderToken":"https://qyapi.weixin.qq.com/cgi-bin/service/get_provider_token",

@@ -1,4 +1,5 @@
 getUserAuthCode = (context, redirect) ->
+	console.log "123456"
 	qiyeweixin = Meteor?.settings?.public?.qiyeweixin
 	o = ServiceConfiguration.configurations.findOne({service: "qiyeweixin"})
 	if o

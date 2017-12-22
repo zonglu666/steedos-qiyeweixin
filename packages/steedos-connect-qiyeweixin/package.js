@@ -43,6 +43,6 @@ Package.onUse(function(api) {
   api.addFiles('server/qywx.coffee', 'server');
   api.addFiles('server/qywx_api.coffee', 'server');
   api.addFiles('server/syncCompany.coffee', 'server');
-  api.addFiles('client/router.coffee', 'client');
+  // api.addFiles('client/router.coffee', 'client');
   api.export('Qiyeweixin');
 });
