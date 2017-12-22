@@ -21,6 +21,8 @@ Qiyeweixin.syncCompany = (space)->
 	# 当下授权的access_token
 	if at&&at.access_token
 		service.access_token = at.access_token
+	console.log "access_token"+at.access_token
+
 	# 当前公司下的全部部门，用于删除多余的
 	allOrganizations = []
 	# 当前公司下的全部已经添加的用户
@@ -173,7 +175,7 @@ addUser = (user)->
 	doc.created = new Date
 	doc.modified = new Date
 	doc.services = {qiyeweixin:{id: user.userid}}
-	userid = db.users.insert(doc)
+	userid = db.users.direct.insert(doc)
 	return userid
 updateOrganization = (old_org,new_org)->
 	doc = {}
@@ -218,7 +220,7 @@ updateUser = (old_user,new_user)->
 		doc.avatarURL = new_user.avatar
 	if doc.hasOwnProperty('name') || doc.hasOwnProperty('avatarURL')
 		doc.modified = new Date
-		db.users.update(old_user._id, {$set: doc})
+		db.users.direct.update(old_user._id, {$set: doc})
 
 	
 

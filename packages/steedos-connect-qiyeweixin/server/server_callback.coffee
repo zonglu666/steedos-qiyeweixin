@@ -16,7 +16,6 @@ JsonRoutes.add "get", "/steedos/qiyeweixin/mainpage", (req, res, next) ->
 		authorize_uri = Meteor?.settings?.qiyeweixin?.authorize_uri
 		appid = o.corpid
 		url = authorize_uri+'?appid='+appid+'&redirect_uri='+redirect_uri+'&response_type=code&scope=snsapi_base#wechat_redirect'
-		console.log url
 		res.writeHead 301, {'Location': url}
 		res.end '现在跳转授权页面'
 
@@ -30,12 +29,9 @@ JsonRoutes.add "get", "/api/qiyeweixin/auth_login", (req, res, next) ->
 		userInfo = Qiyeweixin.getUserInfo3rd req.query.code
 	else
 		return res.end "未获取到网页授权码!"
-
 	user = db.users.findOne({'services.qiyeweixin.id': userInfo.UserId})
-
 	if !user
 		return res.end "用户不存在!"
-
 	# 如果本地已经有cookies
 	if userId and authToken
 		# 比较本地数据和当前用户是否一致
@@ -105,16 +101,17 @@ JsonRoutes.add "post", "/api/qiyeweixin/callback", (req, res, next) ->
 		result = newCrypt.decrypt jsonPostData?.xml?.Encrypt
 		json = parser.toJson result?.message,{object: true}
 		message = json?.xml || {}
-		
-		# 第三方回调协议
 		if message?.InfoType
+			console.log "=============第三方回调协议=============="
 			console.log message
+
+		# 第三方回调协议
 		switch message?.InfoType
 			when 'suite_ticket'
 				SuiteTicket message
 				res.writeHead 200, {"Content-Type":"text/plain"}
 				res.end result?.message
-			# 授权成功：未完成
+			# 授权成功
 			when 'create_auth'
 				# 必须在1秒内响应，保证用户体验
 				res.writeHead 200, {"Content-Type":"text/plain"}
