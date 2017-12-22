@@ -1,6 +1,6 @@
 Package.describe({
   summary: "connect steedos accounts with qiyeweixin",
-  "version": "0.0.1",
+  "version": "0.0.3",
   "name": "steedos:connect-qiyeweixin"
 });
 
@@ -20,8 +20,8 @@ Npm.depends({
 Package.onUse(function(api) {
   api.versionsFrom("METEOR@1.0.3");
   api.use('session');
-  api.use('steedos:base@0.0.65');
-  api.use('steedos:accounts@0.0.24');
+  api.use('steedos:base@0.0.70');
+  api.use('steedos:accounts@0.0.23');
   api.use('steedos:theme@0.0.29');
 
   api.use('accounts-base', ['client', 'server']);
