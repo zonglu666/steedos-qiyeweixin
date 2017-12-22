@@ -185,7 +185,6 @@ initSpace = (service,name)->
 		service.remote_modified = new Date
 		service.need_sync = true
 		modified = new Date
-		console.log service
 		db.spaces.direct.update(
 			{_id:space._id},
 			{$set:{
@@ -223,4 +222,3 @@ SuiteTicket = (message)->
 						"modified": true
 					}
 				})
-
