@@ -97,38 +97,35 @@ JsonRoutes.add "post", "/api/qiyeweixin/callback", (req, res, next) ->
 		result = newCrypt.decrypt jsonPostData?.xml?.Encrypt
 		json = parser.toJson result?.message,{object: true}
 		message = json?.xml || {}
-
-		# # 接收事件推送
-		# if message?.MsgType =='event'
-		# 	console.log "=========事件推送=========="
-		# 	console.log message
+		
 		# 第三方回调协议
 		if message?.InfoType
-			switch message.InfoType
-				when 'suite_ticket'
-					SuiteTicket message
-					res.writeHead 200, {"Content-Type":"text/plain"}
-					res.end result?.message
-				# 授权成功：未完成
-				when 'create_auth'
-					# 必须在1秒内响应，保证用户体验
-					res.writeHead 200, {"Content-Type":"text/plain"}
-					res.end "success"
-					CreateAuth message
-				
-				# 取消授权
-				when 'cancel_auth'
-					res.writeHead 200, {"Content-Type":"text/plain"}
-					res.end result?.message
-					CancelAuth message
+			console.log message
+		switch message?.InfoType
+			when 'suite_ticket'
+				SuiteTicket message
+				res.writeHead 200, {"Content-Type":"text/plain"}
+				res.end result?.message
+			# 授权成功：未完成
+			when 'create_auth'
+				# 必须在1秒内响应，保证用户体验
+				res.writeHead 200, {"Content-Type":"text/plain"}
+				res.end "success"
+				CreateAuth message
+			
+			# 取消授权
+			when 'cancel_auth'
+				res.writeHead 200, {"Content-Type":"text/plain"}
+				res.end result?.message
+				CancelAuth message
 
-				# 授权变更
-				when 'change_auth'
-					ChangeContact message.AuthCorpId
-					
-				# 通讯录变更
-				when 'change_contact'
-					ChangeContact message.AuthCorpId
+			# 授权变更
+			when 'change_auth'
+				ChangeContact message.AuthCorpId
+				
+			# 通讯录变更
+			when 'change_contact'
+				ChangeContact message.AuthCorpId
 
 
 # 通讯录变更，更新space表=============未测试
@@ -188,6 +185,7 @@ initSpace = (service,name)->
 		service.remote_modified = new Date
 		service.need_sync = true
 		modified = new Date
+		console.log service
 		db.spaces.direct.update(
 			{_id:space._id},
 			{$set:{
