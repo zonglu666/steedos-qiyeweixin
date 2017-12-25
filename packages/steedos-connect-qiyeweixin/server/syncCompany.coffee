@@ -21,7 +21,6 @@ Qiyeweixin.syncCompany = (space)->
 	# 当下授权的access_token
 	if at&&at.access_token
 		service.access_token = at.access_token
-	console.log "access_token"+at.access_token
 
 	# 当前公司下的全部部门，用于删除多余的
 	allOrganizations = []

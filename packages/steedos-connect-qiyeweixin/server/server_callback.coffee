@@ -8,13 +8,14 @@ newCrypt = new WXBizMsgCrypt(config?.token, config?.encodingAESKey, config?.corp
 TICKET_EXPIRES_IN = config.ticket_expires_in || 1000 * 60 * 20 #20分钟
 
 # 工作台首页
-JsonRoutes.add "get", "/steedos/qiyeweixin/mainpage", (req, res, next) ->
+JsonRoutes.add "get", "/api/qiyeweixin/mainpage", (req, res, next) ->
 	o = ServiceConfiguration.configurations.findOne({service: "qiyeweixin"})
 	if o
 		redirect_uri = encodeURIComponent Meteor.absoluteUrl('api/qiyeweixin/auth_login')
 		authorize_uri = Meteor?.settings?.qiyeweixin?.authorize_uri
 		appid = o.corpid
 		url = authorize_uri+'?appid='+appid+'&redirect_uri='+redirect_uri+'&response_type=code&scope=snsapi_base#wechat_redirect'
+		console.log "现在跳转授权页面"
 		res.writeHead 301, {'Location': url}
 		res.end '现在跳转授权页面'
 
