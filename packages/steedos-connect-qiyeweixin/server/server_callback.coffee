@@ -7,7 +7,6 @@ config = ServiceConfiguration.configurations.findOne({service: "qiyeweixin"})
 newCrypt = new WXBizMsgCrypt(config?.token, config?.encodingAESKey, config?.corpid)
 TICKET_EXPIRES_IN = config.ticket_expires_in || 1000 * 60 * 20 #20分钟
 
-
 # 工作台首页
 JsonRoutes.add "get", "/steedos/qiyeweixin/mainpage", (req, res, next) ->
 	o = ServiceConfiguration.configurations.findOne({service: "qiyeweixin"})
@@ -156,7 +155,11 @@ CancelAuth = (message)->
 		s_qywx.need_sync = false
 		db.spaces.direct.update(
 			{_id: space._id},
-			{$set: {'services.qiyeweixin': s_qywx}}
+			{$set: {
+				is_deleted:true,
+				'services.qiyeweixin': s_qywx
+				}
+			}
 		)
 				
 
@@ -166,6 +169,7 @@ CreateAuth = (message)->
 	if o
 		# 获取企业永久授权码
 		r = Qiyeweixin.getPermanentCode message.SuiteId,message.AuthCode,o.suite_access_token
+		console.log "获取企业永久授权码"
 		if r&&r?.permanent_code
 			# 永久授权码
 			permanent_code = r.permanent_code
