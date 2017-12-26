@@ -4,7 +4,7 @@
     "path_us": "/srv/git/workflow-templates/en-us/default"
   },
   "qiyeweixin":{
-    "sync_interval":600000,
+    "sync_interval":60000,
     "authorize_uri":"https://open.weixin.qq.com/connect/oauth2/authorize",
     "api":{
       "getLoginInfo":"https://qyapi.weixin.qq.com/cgi-bin/service/get_login_info",
