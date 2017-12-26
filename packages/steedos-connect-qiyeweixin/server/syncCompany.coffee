@@ -104,14 +104,24 @@ manageSpaces = (space)->
 	db.spaces.direct.update(space._id, {$set: doc})
 
 manageOrganizations = (organization)->
-	org = db.organizations.findOne({_id: organization._id})
+	org = db.organizations.findOne({
+				$and:[
+					{_id: organization._id},
+					{space:organization.space}
+				]
+			})
 	if org
 		updateOrganization org,organization
 	else
 		addOrganization organization
 
 manageSpaceUser = (user,orgIds)->
-	su = db.space_users.findOne({user: user._id})
+	su = db.space_users.findOne({
+				$and:[
+					{user: user._id},
+					{space:user.space}
+				]
+			})
 	if su
 		updateSpaceUser su,user,orgIds
 	else
