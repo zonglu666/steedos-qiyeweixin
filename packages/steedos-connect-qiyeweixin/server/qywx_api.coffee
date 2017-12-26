@@ -103,11 +103,10 @@ Qiyeweixin.getPermanentCode = (suite_id,auth_code,suite_access_token) ->
 		throw _.extend(new Error("Failed to complete OAuth handshake with getPermanentCode. " + err), {response: err})
 
 # 获取CorpToken
-Qiyeweixin.getCorpToken = (suite_id,auth_corpid,permanent_code,suite_access_token) ->
+Qiyeweixin.getCorpToken = (auth_corpid,permanent_code,suite_access_token) ->
 	try
 		qyapi = Meteor.settings.qiyeweixin?.api?.getCorpToken
 		data = {
-			suite_id:suite_id,
 			auth_corpid:auth_corpid,
 			permanent_code:permanent_code
 		}
