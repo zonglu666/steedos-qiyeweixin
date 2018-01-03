@@ -4,8 +4,9 @@ WXBizMsgCrypt = Npm.require('wechat-crypto')
 
 config = ServiceConfiguration.configurations.findOne({service: "qiyeweixin"})
 
-newCrypt = new WXBizMsgCrypt(config?.token, config?.encodingAESKey, config?.corpid)
-TICKET_EXPIRES_IN = config.ticket_expires_in || 1000 * 60 * 20 #20分钟
+if config
+	newCrypt = new WXBizMsgCrypt(config?.token, config?.encodingAESKey, config?.corpid)
+	TICKET_EXPIRES_IN = config?.ticket_expires_in || 1000 * 60 * 20 #20分钟
 
 # 工作台首页
 JsonRoutes.add "get", "/api/qiyeweixin/mainpage", (req, res, next) ->
@@ -15,7 +16,6 @@ JsonRoutes.add "get", "/api/qiyeweixin/mainpage", (req, res, next) ->
 		authorize_uri = Meteor?.settings?.qiyeweixin?.authorize_uri
 		appid = o.corpid
 		url = authorize_uri+'?appid='+appid+'&redirect_uri='+redirect_uri+'&response_type=code&scope=snsapi_base#wechat_redirect'
-		console.log "现在跳转授权页面"
 		res.writeHead 301, {'Location': url}
 		res.end '现在跳转授权页面'
 
@@ -101,10 +101,6 @@ JsonRoutes.add "post", "/api/qiyeweixin/callback", (req, res, next) ->
 		result = newCrypt.decrypt jsonPostData?.xml?.Encrypt
 		json = parser.toJson result?.message,{object: true}
 		message = json?.xml || {}
-		if message?.InfoType
-			console.log "=============第三方回调协议=============="
-			console.log message
-
 		# 第三方回调协议
 		switch message?.InfoType
 			when 'suite_ticket'
@@ -170,7 +166,6 @@ CreateAuth = (message)->
 	if o
 		# 获取企业永久授权码
 		r = Qiyeweixin.getPermanentCode message.SuiteId,message.AuthCode,o.suite_access_token
-		console.log "获取企业永久授权码"
 		if r&&r?.permanent_code
 			# 永久授权码
 			permanent_code = r.permanent_code
