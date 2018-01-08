@@ -5,8 +5,8 @@ WXBizMsgCrypt = Npm.require('wechat-crypto')
 config = ServiceConfiguration.configurations.findOne({service: "qiyeweixin"})
 
 if config
-	newCrypt = new WXBizMsgCrypt(config?.token, config?.encodingAESKey, config?.corpid)
-	TICKET_EXPIRES_IN = config?.ticket_expires_in || 1000 * 60 * 20 #20分钟
+	newCrypt = new WXBizMsgCrypt(config?.secret?.token, config?.secret?.encodingAESKey, config?.secret?.corpid)
+	TICKET_EXPIRES_IN = config?.secret?.ticket_expires_in || 1000 * 60 * 20 #20分钟
 
 # 工作台首页
 JsonRoutes.add "get", "/api/qiyeweixin/mainpage", (req, res, next) ->
@@ -14,7 +14,7 @@ JsonRoutes.add "get", "/api/qiyeweixin/mainpage", (req, res, next) ->
 	if o
 		redirect_uri = encodeURIComponent Meteor.absoluteUrl('api/qiyeweixin/auth_login')
 		authorize_uri = Meteor?.settings?.qiyeweixin?.authorize_uri
-		appid = o.corpid
+		appid = o?.secret?.corpid
 		url = authorize_uri+'?appid='+appid+'&redirect_uri='+redirect_uri+'&response_type=code&scope=snsapi_base#wechat_redirect'
 		res.writeHead 301, {'Location': url}
 		res.end '现在跳转授权页面'
@@ -29,7 +29,7 @@ JsonRoutes.add "get", "/api/qiyeweixin/auth_login", (req, res, next) ->
 		userInfo = Qiyeweixin.getUserInfo3rd req.query.code
 	else
 		return res.end "未获取到网页授权码!"
-	user = db.users.findOne({'services.qiyeweixin.id': userInfo.UserId})
+	user = db.users.findOne({'services.qiyeweixin.id': userInfo?.UserId})
 	if !user
 		return res.end "用户不存在!"
 	# 如果本地已经有cookies
@@ -55,7 +55,7 @@ JsonRoutes.add "get", "/api/qiyeweixin/auth_login", (req, res, next) ->
 JsonRoutes.add "get", "/api/qiyeweixin/sso_steedos", (req, res, next) ->
 	o = ServiceConfiguration.configurations.findOne({service: "qiyeweixin"})
 	# 获取服务商的token
-	at = Qiyeweixin.getProviderToken o.corpid,o.provider_secret
+	at = Qiyeweixin.getProviderToken o?.secret?.corpid,o?.secret?.provider_secret
 	if at&&at.provider_access_token
 		loginInfo = Qiyeweixin.getLoginInfo at.provider_access_token,req.query.auth_code
 		if loginInfo?.user_info?.userid
@@ -101,6 +101,11 @@ JsonRoutes.add "post", "/api/qiyeweixin/callback", (req, res, next) ->
 		result = newCrypt.decrypt jsonPostData?.xml?.Encrypt
 		json = parser.toJson result?.message,{object: true}
 		message = json?.xml || {}
+
+		if message?.InfoType
+			console.log "===========第三方回调协议==========="
+			console.log message
+
 		# 第三方回调协议
 		switch message?.InfoType
 			when 'suite_ticket'
@@ -129,7 +134,7 @@ JsonRoutes.add "post", "/api/qiyeweixin/callback", (req, res, next) ->
 				ChangeContact message.AuthCorpId
 
 
-# 通讯录变更，更新space表=============未测试
+# 通讯录变更，更新space表=============
 ChangeContact = (corp_id)->
 	space = db.spaces.findOne({'services.qiyeweixin.corp_id': corp_id})
 	if space
@@ -165,7 +170,9 @@ CreateAuth = (message)->
 	o = ServiceConfiguration.configurations.findOne({service: "qiyeweixin"})
 	if o
 		# 获取企业永久授权码
-		r = Qiyeweixin.getPermanentCode message.SuiteId,message.AuthCode,o.suite_access_token
+		r = Qiyeweixin.getPermanentCode message?.SuiteId,message?.AuthCode,o?.secret?.suite_access_token
+		console.log "----------永久授权码---------"
+		console.log r
 		if r&&r?.permanent_code
 			# 永久授权码
 			permanent_code = r.permanent_code
@@ -215,13 +222,16 @@ initSpace = (service,name)->
 SuiteTicket = (message)->
 	o = ServiceConfiguration.configurations.findOne({service: "qiyeweixin"})
 	if o
-		r = Qiyeweixin.getSuiteAccessToken o.suite_id,o.suite_secret,message.SuiteTicket
+		r = Qiyeweixin.getSuiteAccessToken o?.secret?.suite_id,o?.secret?.suite_secret,message.SuiteTicket
+		console.log "===========根据suite_ticket，获取suite_access_token==========="
+		console.log r
 		if r&&r?.suite_access_token
+			console.log "====更新config===="
 			ServiceConfiguration.configurations.update(o._id,
 				{
 					$set: {
-						"suite_ticket": message.SuiteTicket,
-						"suite_access_token": r.suite_access_token
+						"secret.suite_ticket": message.SuiteTicket,
+						"secret.suite_access_token": r.suite_access_token
 					},
 					$currentDate:{
 						"modified": true

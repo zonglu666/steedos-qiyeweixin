@@ -127,14 +127,14 @@ Qiyeweixin.getCorpToken = (auth_corpid,permanent_code,suite_access_token) ->
 # 获取管理员列表
 Qiyeweixin.getAdminList =(auth_corpid,agentid)->
 	try
-		o = ServiceConfiguration.configurations.findOne({service: "qiyeweixin"},{suite_access_token:1})
+		o = ServiceConfiguration.configurations.findOne({service: "qiyeweixin"})
 		qyapi = Meteor.settings.qiyeweixin?.api?.getAdminList
 		data = {
 			auth_corpid:auth_corpid,
 			agentid:agentid
 		}
 		response = HTTP.post(
-			qyapi + "?suite_access_token=" + o.suite_access_token, 
+			qyapi + "?suite_access_token=" + o?.secret?.suite_access_token, 
 			{
 				data: data,
 				headers:"Content-Type": "application/json"
@@ -149,9 +149,9 @@ Qiyeweixin.getAdminList =(auth_corpid,agentid)->
 # 获取用户信息信息
 Qiyeweixin.getUserInfo3rd = (code) ->
 	try
-		o = ServiceConfiguration.configurations.findOne({service: "qiyeweixin"},{suite_access_token:1})	
+		o = ServiceConfiguration.configurations.findOne({service: "qiyeweixin"})	
 		qyapi = Meteor.settings.qiyeweixin?.api?.getUserInfo3rd
-		getUserInfo3rdUrl = qyapi + "?access_token=" + o.suite_access_token + "&code=" + code
+		getUserInfo3rdUrl = qyapi + "?access_token=" + o?.secret?.suite_access_token + "&code=" + code
 		response = HTTP.get getUserInfo3rdUrl
 		if response.error_code
 			throw response.msg
