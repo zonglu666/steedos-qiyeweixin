@@ -18,8 +18,6 @@ Qiyeweixin.syncCompany = (space)->
 	# 根据永久授权码获取access_token
 	o = ServiceConfiguration.configurations.findOne({service: "qiyeweixin"})
 	at = Qiyeweixin.getCorpToken service.corp_id,service.permanent_code,o?.secret?.suite_access_token
-	console.log "-----------获取access_token-----------"
-	console.log at
 	# 当下授权的access_token
 	if at&&at.access_token
 		service.access_token = at.access_token

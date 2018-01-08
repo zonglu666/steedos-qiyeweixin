@@ -101,11 +101,6 @@ JsonRoutes.add "post", "/api/qiyeweixin/callback", (req, res, next) ->
 		result = newCrypt.decrypt jsonPostData?.xml?.Encrypt
 		json = parser.toJson result?.message,{object: true}
 		message = json?.xml || {}
-
-		if message?.InfoType
-			console.log "===========第三方回调协议==========="
-			console.log message
-
 		# 第三方回调协议
 		switch message?.InfoType
 			when 'suite_ticket'
@@ -171,8 +166,6 @@ CreateAuth = (message)->
 	if o
 		# 获取企业永久授权码
 		r = Qiyeweixin.getPermanentCode message?.SuiteId,message?.AuthCode,o?.secret?.suite_access_token
-		console.log "----------永久授权码---------"
-		console.log r
 		if r&&r?.permanent_code
 			# 永久授权码
 			permanent_code = r.permanent_code
@@ -223,10 +216,7 @@ SuiteTicket = (message)->
 	o = ServiceConfiguration.configurations.findOne({service: "qiyeweixin"})
 	if o
 		r = Qiyeweixin.getSuiteAccessToken o?.secret?.suite_id,o?.secret?.suite_secret,message.SuiteTicket
-		console.log "===========根据suite_ticket，获取suite_access_token==========="
-		console.log r
 		if r&&r?.suite_access_token
-			console.log "====更新config===="
 			ServiceConfiguration.configurations.update(o._id,
 				{
 					$set: {
