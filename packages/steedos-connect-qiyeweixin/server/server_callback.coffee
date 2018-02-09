@@ -17,10 +17,11 @@ JsonRoutes.add "get", "/api/qiyeweixin/mainpage", (req, res, next) ->
 		appid = o?.secret?.corpid
 		url = authorize_uri+'?appid='+appid+'&redirect_uri='+redirect_uri+'&response_type=code&scope=snsapi_base#wechat_redirect'
 		res.writeHead 301, {'Location': url}
-		res.end '现在跳转授权页面'
+		res.end ''
 
 # 网页授权登录
 JsonRoutes.add "get", "/api/qiyeweixin/auth_login", (req, res, next) ->
+	console.log "======auth_login========"
 	cookies = new Cookies( req, res );
 	userId = cookies.get("X-User-Id")
 	authToken = cookies.get("X-Auth-Token")
@@ -28,10 +29,18 @@ JsonRoutes.add "get", "/api/qiyeweixin/auth_login", (req, res, next) ->
 	if req?.query?.code
 		userInfo = Qiyeweixin.getUserInfo3rd req.query.code
 	else
-		return res.end "未获取到网页授权码!"
+		res.writeHead 200, {'Content-Type': 'text/html'}  
+		res.write '<head><meta charset="utf-8"/></head>'
+		res.write '<h1>提示 Tips</h1>' 
+		res.write '<h2>未从企业微信获取到网页授权码</h2>'
+		return res.end ''
 	user = db.users.findOne({'services.qiyeweixin.id': userInfo?.UserId})
 	if !user
-		return res.end "用户不存在!"
+		res.writeHead 200, {'Content-Type': 'text/html'}  
+		res.write '<head><meta charset="utf-8"/></head>'
+		res.write '<h1>提示 Tips</h1>' 
+		res.write '<h2>正在同步企业微信用户数据...</h2>'
+		return res.end ''
 	# 如果本地已经有cookies
 	if userId and authToken
 		# 比较本地数据和当前用户是否一致
@@ -42,14 +51,14 @@ JsonRoutes.add "get", "/api/qiyeweixin/auth_login", (req, res, next) ->
 			Accounts.destroyToken(userId, hashedToken)
 		else
 			res.writeHead 301, {'Location': '/'}
-			return res.end 'success'
+			return res.end ''
 	# 验证成功，登录
 	authToken = Accounts._generateStampedLoginToken()
 	hashedToken = Accounts._hashStampedToken authToken
 	Accounts._insertHashedLoginToken user._id,hashedToken
 	Setup.setAuthCookies req,res,user._id,authToken.token
 	res.writeHead 301, {'Location': '/'}
-	return res.end 'success'
+	return res.end ''
 
 # 从企业微信端单点登录:从浏览器后台管理页面“前往服务商后台”进入的网址
 JsonRoutes.add "get", "/api/qiyeweixin/sso_steedos", (req, res, next) ->
@@ -69,11 +78,23 @@ JsonRoutes.add "get", "/api/qiyeweixin/sso_steedos", (req, res, next) ->
 				res.writeHead 301, {'Location': '/'}
 				res.end 'success'
 			else
-				res.end "用户不存在!"
+				res.writeHead 200, {'Content-Type': 'text/html'}  
+				res.write '<head><meta charset="utf-8"/></head>'
+				res.write '<h1>提示 Tips</h1>' 
+				res.write '<h2>正在同步企业微信用户数据...</h2>'
+				res.end ''
 		else
-			res.end "未获取到用户信息!"
+			res.writeHead 200, {'Content-Type': 'text/html'}  
+			res.write '<head><meta charset="utf-8"/></head>'
+			res.write '<h1>提示 Tips</h1>' 
+			res.write '<h2>未从企业微信获取到用户信息！</h2>'
+			res.end ''
 	else
-		res.end "未获取到服务商的Token!"
+		res.writeHead 200, {'Content-Type': 'text/html'}  
+		res.write '<head><meta charset="utf-8"/></head>'
+		res.write '<h1>提示 Tips</h1>' 
+		res.write '<h2>未从企业微信获取到服务商的Token</h2>'
+		res.end ''
 
 # 创建套件使用，验证第三方回调协议可用性
 JsonRoutes.add "get", "/api/qiyeweixin/callback", (req, res, next) ->
@@ -103,6 +124,7 @@ JsonRoutes.add "post", "/api/qiyeweixin/callback", (req, res, next) ->
 		message = json?.xml || {}
 		# 第三方回调协议
 		switch message?.InfoType
+			# 十分钟一次发送access_token
 			when 'suite_ticket'
 				SuiteTicket message
 				res.writeHead 200, {"Content-Type":"text/plain"}
@@ -190,7 +212,7 @@ initSpace = (service,name)->
 		service.remote_modified = new Date
 		service.need_sync = true
 		modified = new Date
-		db.spaces.direct.update(
+		newSpace = db.spaces.direct.update(
 			{_id:space._id},
 			{$set:{
 				modified:modified,
@@ -209,7 +231,11 @@ initSpace = (service,name)->
 		service.need_sync = true
 		service.remote_modified = new Date
 		doc.services = {qiyeweixin:service}
-		db.spaces.direct.insert doc
+		newSpace = db.spaces.direct.insert doc
+
+	newSpace = db.spaces.findOne({"services.qiyeweixin.corp_id": service.corp_id})
+	if newSpace
+		Qiyeweixin.syncCompany newSpace
 
 # 根据suite_ticket，获取suite_access_token
 SuiteTicket = (message)->
