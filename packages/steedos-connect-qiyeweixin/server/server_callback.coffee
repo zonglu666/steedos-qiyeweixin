@@ -21,7 +21,6 @@ JsonRoutes.add "get", "/api/qiyeweixin/mainpage", (req, res, next) ->
 
 # 网页授权登录
 JsonRoutes.add "get", "/api/qiyeweixin/auth_login", (req, res, next) ->
-	console.log "======auth_login========"
 	cookies = new Cookies( req, res );
 	userId = cookies.get("X-User-Id")
 	authToken = cookies.get("X-Auth-Token")
