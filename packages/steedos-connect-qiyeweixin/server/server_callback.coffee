@@ -16,7 +16,7 @@ JsonRoutes.add "get", "/api/qiyeweixin/mainpage", (req, res, next) ->
 		authorize_uri = Meteor?.settings?.qiyeweixin?.authorize_uri
 		appid = o?.secret?.corpid
 		url = authorize_uri+'?appid='+appid+'&redirect_uri='+redirect_uri+'&response_type=code&scope=snsapi_base#wechat_redirect'
-		res.writeHead 301, {'Location': url}
+		res.writeHead 302, {'Location': url}
 		res.end ''
 
 # 网页授权登录
@@ -49,14 +49,14 @@ JsonRoutes.add "get", "/api/qiyeweixin/auth_login", (req, res, next) ->
 			hashedToken = Accounts._hashLoginToken(authToken)
 			Accounts.destroyToken(userId, hashedToken)
 		else
-			res.writeHead 301, {'Location': '/'}
+			res.writeHead 302, {'Location': '/'}
 			return res.end ''
 	# 验证成功，登录
 	authToken = Accounts._generateStampedLoginToken()
 	hashedToken = Accounts._hashStampedToken authToken
 	Accounts._insertHashedLoginToken user._id,hashedToken
 	Setup.setAuthCookies req,res,user._id,authToken.token
-	res.writeHead 301, {'Location': '/'}
+	res.writeHead 302, {'Location': '/'}
 	return res.end ''
 
 # 从企业微信端单点登录:从浏览器后台管理页面“前往服务商后台”进入的网址
@@ -74,7 +74,7 @@ JsonRoutes.add "get", "/api/qiyeweixin/sso_steedos", (req, res, next) ->
 				hashedToken = Accounts._hashStampedToken authToken
 				Accounts._insertHashedLoginToken user._id,hashedToken
 				Setup.setAuthCookies req,res,user._id,authToken.token
-				res.writeHead 301, {'Location': '/'}
+				res.writeHead 302, {'Location': '/'}
 				res.end 'success'
 			else
 				res.writeHead 200, {'Content-Type': 'text/html'}  
@@ -121,6 +121,9 @@ JsonRoutes.add "post", "/api/qiyeweixin/callback", (req, res, next) ->
 		result = newCrypt.decrypt jsonPostData?.xml?.Encrypt
 		json = parser.toJson result?.message,{object: true}
 		message = json?.xml || {}
+
+		console.log "========="
+		console.log message
 		# 第三方回调协议
 		switch message?.InfoType
 			# 十分钟一次发送access_token
@@ -216,6 +219,7 @@ initSpace = (service,name)->
 			{$set:{
 				modified:modified,
 				name:name,
+				is_deleted:false,
 				'services.qiyeweixin':service
 				}
 			}

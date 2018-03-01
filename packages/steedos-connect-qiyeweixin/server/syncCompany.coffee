@@ -5,12 +5,15 @@ Meteor.startup ()->
 
 # Qiyeweixin.startSyncCompany()
 Qiyeweixin.startSyncCompany = ()->
-	total = db.spaces.find({'services.qiyeweixin.need_sync':true}).count()
-	i = 0
-	while(i < total)
-		i++
-		space = db.spaces.findOne({'services.qiyeweixin.need_sync':true})
-		Qiyeweixin.syncCompany space
+	spaces = db.spaces.find(
+		$and:[
+			{'is_deleted': false},
+			{'services.qiyeweixin.need_sync':true}
+		]).fetch()
+	
+	if spaces
+		spaces.forEach (space)->
+			Qiyeweixin.syncCompany space
 
 Qiyeweixin.syncCompany = (space)->
 	service = space.services.qiyeweixin
@@ -122,6 +125,7 @@ manageSpaceUser = (user,orgIds)->
 					{space:user.space}
 				]
 			})
+	console.log "同步spaceuser",su
 	if su
 		updateSpaceUser su,user,orgIds
 	else
