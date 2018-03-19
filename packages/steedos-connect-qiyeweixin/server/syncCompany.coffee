@@ -125,7 +125,6 @@ manageSpaceUser = (user,orgIds)->
 					{space:user.space}
 				]
 			})
-	console.log "同步spaceuser",su
 	if su
 		updateSpaceUser su,user,orgIds
 	else

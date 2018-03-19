@@ -122,8 +122,6 @@ JsonRoutes.add "post", "/api/qiyeweixin/callback", (req, res, next) ->
 		json = parser.toJson result?.message,{object: true}
 		message = json?.xml || {}
 
-		console.log "========="
-		console.log message
 		# 第三方回调协议
 		switch message?.InfoType
 			# 十分钟一次发送access_token
